@@ -630,15 +630,19 @@ function connectTelegram() {
   telegramCall(() => telegram.ready());
 }
 
-deviceTheme.addEventListener?.('change', () => { if (!inTelegram && theme === 'auto') applyTheme(); });
-if (new URLSearchParams(location.search).get('mark') === 'stripes') document.documentElement.dataset.mark = 'stripes';
-applyTheme();
-render();
-if (telegram) connectTelegram();
-else {
+function loadTelegramSdk() {
   const sdk = document.createElement('script');
   sdk.src = 'https://telegram.org/js/telegram-web-app.js?65';
   sdk.async = true;
   sdk.addEventListener('load', connectTelegram);
   document.head.append(sdk);
 }
+
+deviceTheme.addEventListener?.('change', () => { if (!inTelegram && theme === 'auto') applyTheme(); });
+if (new URLSearchParams(location.search).get('mark') === 'stripes') document.documentElement.dataset.mark = 'stripes';
+applyTheme();
+render();
+if (telegram) connectTelegram();
+else if (document.readyState === 'complete') loadTelegramSdk();
+// A pending SDK request must not keep Telegram Desktop's page loader visible.
+else window.addEventListener('load', () => setTimeout(loadTelegramSdk, 0), { once: true });
