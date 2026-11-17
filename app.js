@@ -523,16 +523,21 @@ function toggleStored(set, key) {
   return marked;
 }
 
+function openInTelegram(link) {
+  const telegramLink = link.hasAttribute('data-telegram');
+  const method = telegramLink ? 'openTelegramLink' : 'openLink';
+  if (inTelegram && typeof telegram[method] === 'function' && telegramCall(() => telegram[method](link.href))) return true;
+  const proxy = window.TelegramWebviewProxy;
+  if (!telegramLink || typeof proxy?.postEvent !== 'function' || !link.href.startsWith('https://t.me/')) return false;
+  const url = new URL(link.href);
+  return telegramCall(() => proxy.postEvent('web_app_open_tg_link', JSON.stringify({ path_full: url.pathname + url.search })));
+}
+
 document.addEventListener('click', event => {
   const link = event.target.closest('a[data-telegram], a[data-external]');
-  if (inTelegram && link && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
-    const method = link.hasAttribute('data-telegram') ? 'openTelegramLink' : 'openLink';
-    if (telegram[method]) {
-      if (telegramCall(() => telegram[method](link.href))) {
-        event.preventDefault();
-        return;
-      }
-    }
+  if (link && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey && openInTelegram(link)) {
+    event.preventDefault();
+    return;
   }
 
   const button = event.target.closest('button');
